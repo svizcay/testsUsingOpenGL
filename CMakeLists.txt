@@ -1,16 +1,21 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 2.8)
 project(Glitter)
 
+# GLFW for creating OpenGL context and handling user input
 option(GLFW_BUILD_DOCS OFF)
 option(GLFW_BUILD_EXAMPLES OFF)
 option(GLFW_BUILD_TESTS OFF)
+# add additional source files to be compiled. CMakeLists.txt is required in that directory
+# add_subdirectory(source_dir)
 add_subdirectory(Glitter/Vendor/glfw)
 
+# Assimp mesh loading library
 option(ASSIMP_BUILD_ASSIMP_TOOLS OFF)
 option(ASSIMP_BUILD_SAMPLES OFF)
 option(ASSIMP_BUILD_TESTS OFF)
 add_subdirectory(Glitter/Vendor/assimp)
 
+# Bullet physics library
 option(BUILD_BULLET2_DEMOS OFF)
 option(BUILD_CPU_DEMOS OFF)
 option(BUILD_EXTRAS OFF)
@@ -27,6 +32,8 @@ else()
     endif()
 endif()
 
+# list of directories with headers
+# include_directories(dir1 [dir2 ...])
 include_directories(Glitter/Headers/
                     Glitter/Vendor/assimp/include/
                     Glitter/Vendor/bullet/src/
@@ -55,6 +62,8 @@ source_group("Vendors" FILES ${VENDORS_SOURCES})
 
 add_definitions(-DGLFW_INCLUDE_NONE
                 -DPROJECT_SOURCE_DIR=\"${PROJECT_SOURCE_DIR}\")
+
+# add_executable(<targetName> source1 [source2 ...])
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES} ${PROJECT_HEADERS}
                                ${PROJECT_SHADERS} ${PROJECT_CONFIGS}
                                ${VENDORS_SOURCES})
