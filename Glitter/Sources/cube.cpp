@@ -88,7 +88,7 @@ Cube::Cube() {
     int textureWidth, textureHeight;
     int nrBytesPerPixel;
     unsigned char *image = stbi_load(
-            "chaerin960x960.png",
+            "awesomeface.png",
             &textureWidth,
             &textureHeight,
             &nrBytesPerPixel,

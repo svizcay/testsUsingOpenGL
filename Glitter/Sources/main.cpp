@@ -21,12 +21,13 @@
 #include <quad.hpp>
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
+void cursorCallback(GLFWwindow *window, double xpos, double ypos);
 
 
 class Camera {
     public:
         Camera() {
-            position    = glm::vec3(0.0f, 5.0f, 20.0f);
+            position    = glm::vec3(0.0f, 5.0f, 5.0f);
             target      = glm::vec3(0.0f, 0.0f, 0.0f);
             up          = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -63,8 +64,8 @@ class Camera {
 
             // rotate y
             targetRelativeToCamera = glm::rotateY(targetRelativeToCamera, yAngle);
-            target = targetRelativeToCamera;
-            std::cout << "target: " << target.x << " " << target.y << " " << target.z << "\n";
+            target = targetRelativeToCamera + position;
+            // std::cout << "target: " << target.x << " " << target.y << " " << target.z << "\n";
         }
 
         glm::mat4 getView() {
@@ -147,6 +148,15 @@ int main(int argc, char * argv[]) {
     fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
 
     glfwSetKeyCallback(mWindow, keyCallback);
+    glfwSetCursorPosCallback(mWindow, cursorCallback);
+    glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // default value -> limited to window size
+    // glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);   // not limited
+    /*
+     *  GLFW_CURSOR_DISABLED:
+     *  mouse desaparece
+     *  cada vez que se mueve a la izq, el valor decrementa (sin importar limites)
+     *  cada vez que se mueve a la der, el valor aumenta (idem)
+     */
 
     // set viewport to use full available window space
     int currentWidth, currentHeight;
@@ -214,6 +224,8 @@ int main(int argc, char * argv[]) {
     Cube *firstCube = new Cube();
     Cube *secondCube = new Cube();
     secondCube->position = glm::vec3(5.0f, 0.0f, 5.0f);
+    Cube *thirdCube = new Cube();
+    thirdCube->position = glm::vec3(-5.0f, 0.0f, 5.0f);
     // Quad *quadPtr = new Quad();
 
     glEnable(GL_DEPTH_TEST);
@@ -223,7 +235,7 @@ int main(int argc, char * argv[]) {
 
         glfwPollEvents();
         timer.update();
-        updateCamera(camera);
+        // updateCamera(camera);
 
         // rotationMat = glm::rotate(
         //         rotationMat,
@@ -258,6 +270,7 @@ int main(int argc, char * argv[]) {
 
         firstCube->draw(shaderPtr);
         secondCube->draw(shaderPtr);
+        thirdCube->draw(shaderPtr);
         // quadPtr->draw();
 
         // Flip Buffers and Draw
@@ -266,6 +279,7 @@ int main(int argc, char * argv[]) {
 
     delete firstCube;
     delete secondCube;
+    delete thirdCube;
     // delete quadPtr;
 
     delete shaderPtr;
@@ -281,8 +295,16 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode
     }
 }
 
+void cursorCallback(GLFWwindow *window, double xpos, double ypos) {
+    // (0,0) top left corner
+    std::cout << xpos << " " << ypos << "\n";
+
+    // reset mouse position
+    // glfwSetCursorPos(window, mWidth / 2, mHeight / 2);
+}
+
 void updateCamera(Camera & camera) {
     // rotate camera along y axis
-    float targetSpeed = (M_PI / 2.0f) / 1.0f;    // (90 grados in 1 seconds)
+    float targetSpeed = (M_PI / 2.0f) / 5.0f;    // (90 grados in 5 seconds)
     camera.rotate(0.0f, targetSpeed * timer.deltaTime, 0.0f);
 }
