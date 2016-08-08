@@ -33,6 +33,11 @@ namespace Mirage
         glUniform3f(location, value, value2, value3);
     }
 
+    void Shader::bind(unsigned int location, float value, float value2, float value3, float value4)
+    {
+        glUniform4f(location, value, value2, value3, value4);
+    }
+
     void Shader::bind(unsigned int location, glm::mat4 const & matrix)
     {
         glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));

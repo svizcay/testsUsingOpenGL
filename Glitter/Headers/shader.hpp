@@ -37,6 +37,7 @@ namespace Mirage
         void bind(unsigned int location, float value);
         void bind(unsigned int location, float value, float value2);
         void bind(unsigned int location, float value, float value2, float value3);
+        void bind(unsigned int location, float value, float value2, float value3, float value4);
         void bind(unsigned int location, glm::mat4 const & matrix);
 
         template<typename T> Shader & bind(std::string const & name, T&& value)
@@ -55,11 +56,16 @@ namespace Mirage
         }
         template<typename T> Shader & bind(std::string const & name, T&& value, T&& value2, T&& value3)
         {
-            fprintf(stdout, "entro\n");
             int location = glGetUniformLocation(mProgram, name.c_str());
-            fprintf(stdout, "location %d\n", location);
             if (location == -1) fprintf(stderr, "Missing Uniform: %s\n", name.c_str());
             else bind(location, std::forward<T>(value), std::forward<T>(value2), std::forward<T>(value3));
+            return *this;
+        }
+        template<typename T> Shader & bind(std::string const & name, T&& value, T&& value2, T&& value3, T&& value4)
+        {
+            int location = glGetUniformLocation(mProgram, name.c_str());
+            if (location == -1) fprintf(stderr, "Missing Uniform: %s\n", name.c_str());
+            else bind(location, std::forward<T>(value), std::forward<T>(value2), std::forward<T>(value3), std::forward<T>(value4));
             return *this;
         }
 
