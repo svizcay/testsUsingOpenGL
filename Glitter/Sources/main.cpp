@@ -42,6 +42,8 @@ class Camera {
             pitch   = 0.0f;
             yaw     = 270.0f;
             roll    = 0.0f;
+
+            allowMouseMov = true;
         }
 
         // void setPosition(float x, float y, float z) { position = glm::vec3(x, y, z); }
@@ -94,6 +96,8 @@ class Camera {
         GLfloat pitch;  // rotation x
         GLfloat yaw;    // rotation y
         GLfloat roll;   // rotation z
+
+        bool allowMouseMov;
 
     private:
         // view
@@ -337,6 +341,17 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode
         glfwSetWindowShouldClose(window, GL_TRUE);
     }
 
+    if (key == GLFW_KEY_L && action == GLFW_PRESS) {
+        camera.allowMouseMov = !camera.allowMouseMov;
+        if (camera.allowMouseMov) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            mouse.firstValue = true;
+        } else {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+
+    }
+
     /*
      * DONT CALL updateCamera here!
      * CALL updateCamera EVERY FRAME (using the previous stored key state).
@@ -352,40 +367,44 @@ void cursorCallback(GLFWwindow *window, double xpos, double ypos) {
     // reset mouse position
     // glfwSetCursorPos(window, mWidth / 2, mHeight / 2);
 
-    if (mouse.firstValue) {
+    // update camera view only is camera allow mouse movement
+    if (camera.allowMouseMov) {
+        if (mouse.firstValue) {
+            mouse.lastX = xpos;
+            mouse.lastY = ypos;
+            mouse.firstValue = false;
+        }
+
+        GLfloat xOffset = xpos - mouse.lastX;
+        GLfloat yOffset = mouse.lastY - ypos;
+
+        // std::cout << "moving cursos frame=" << timer.nrFrames << " offset =(" << xOffset << " " << yOffset << ")\n";
+
+        // update mouse object last values
         mouse.lastX = xpos;
         mouse.lastY = ypos;
-        mouse.firstValue = false;
+
+        xOffset *= mouse.sensitivity;
+        yOffset *= mouse.sensitivity;
+
+        camera.yaw      += xOffset;
+        camera.pitch    += yOffset;
+
+        // vertical angle constraint
+        if (camera.pitch > 89.0f) {
+            camera.pitch = 89.0f;
+        } else if (camera.pitch < -89.0f) {
+            camera.pitch = -89.0f;
+        }
+
+        glm::vec3 front;
+        front.x = cos(glm::radians(camera.pitch)) * cos(glm::radians(camera.yaw));
+        front.y = sin(glm::radians(camera.pitch));
+        front.z = cos(glm::radians(camera.pitch)) * sin(glm::radians(camera.yaw));
+        camera.front = glm::normalize(front);
+        camera.target = camera.position + camera.front;
     }
 
-    GLfloat xOffset = xpos - mouse.lastX;
-    GLfloat yOffset = mouse.lastY - ypos;
-
-    std::cout << "moving cursos frame=" << timer.nrFrames << " offset =(" << xOffset << " " << yOffset << ")\n";
-
-    // update mouse object last values
-    mouse.lastX = xpos;
-    mouse.lastY = ypos;
-
-    xOffset *= mouse.sensitivity;
-    yOffset *= mouse.sensitivity;
-
-    camera.yaw      += xOffset;
-    camera.pitch    += yOffset;
-
-    // vertical angle constraint
-    if (camera.pitch > 89.0f) {
-        camera.pitch = 89.0f;
-    } else if (camera.pitch < -89.0f) {
-        camera.pitch = -89.0f;
-    }
-
-    glm::vec3 front;
-    front.x = cos(glm::radians(camera.pitch)) * cos(glm::radians(camera.yaw));
-    front.y = sin(glm::radians(camera.pitch));
-    front.z = cos(glm::radians(camera.pitch)) * sin(glm::radians(camera.yaw));
-    camera.front = glm::normalize(front);
-    camera.target = camera.position + camera.front;
 }
 
 void updateCamera(Camera & camera) {
