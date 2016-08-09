@@ -27,17 +27,25 @@ void cursorCallback(GLFWwindow *window, double xpos, double ypos);
 class Camera {
     public:
         Camera() {
-            position    = glm::vec3(0.0f, 5.0f, 5.0f);
-            target      = glm::vec3(0.0f, 0.0f, 0.0f);
+            position    = glm::vec3(0.0f, 0.0f, 5.0f);
+            front       = glm::vec3(0.0f, 0.0f, -1.0f);
+            target      = position + front;
             up          = glm::vec3(0.0f, 1.0f, 0.0f);
 
             fov = 45.0f;
             aspectRatio = 4.0f / 3.0f;
             nearPlane = 0.01f;
             farPlane = 100.0f;
+
+            movSpeed = 3.0f / 1.0f; // 1 unit in 1 second
+
+            pitch   = 0.0f;
+            yaw     = 270.0f;
+            roll    = 0.0f;
         }
 
-        void setPosition(float x, float y, float z);
+        // void setPosition(float x, float y, float z) { position = glm::vec3(x, y, z); }
+        void setFront(float x, float y, float z);
         void setTarget(float x, float y, float z);
         void setUp(float x, float y, float z);
         void setFOV(float fov);
@@ -76,17 +84,26 @@ class Camera {
             return glm::perspective(fov, aspectRatio, nearPlane, farPlane);
         }
 
+        glm::vec3 position;
+        glm::vec3 front;
+        glm::vec3 target;   // target = position + front
+        glm::vec3 up;
+        float movSpeed;
+
+        // rotation euler angles
+        GLfloat pitch;  // rotation x
+        GLfloat yaw;    // rotation y
+        GLfloat roll;   // rotation z
+
     private:
         // view
-        glm::vec3 position;
-        glm::vec3 target;
-        glm::vec3 up;
 
         // projection
         float fov;  // in angle
         float aspectRatio;
         float nearPlane;
         float farPlane;
+
 };
 
 class Timer {
@@ -107,6 +124,7 @@ class Timer {
         }
 
         float deltaTime;        // since last frame
+        long long nrFrames;
 
     private:
         std::chrono::high_resolution_clock::time_point start;
@@ -114,8 +132,23 @@ class Timer {
         float previousTime;
         float elapsedTime;      // since the beginning
 
-        long long nrFrames;
         float fps;
+};
+
+class Mouse {
+    public:
+        Mouse() {
+            lastX = 0;
+            lastY = 0;
+            firstValue = true;
+        }
+        GLfloat lastX;
+        GLfloat lastY;
+        bool firstValue;
+        GLfloat sensitivity = 0.05f;
+
+    private:
+
 };
 
 void updateCamera(Camera & camera);
@@ -123,6 +156,8 @@ void updateCamera(Camera & camera);
 // globals
 Camera camera;
 Timer timer;
+Mouse mouse;
+bool keys[1024];
 
 int main(int argc, char * argv[]) {
 
@@ -149,13 +184,14 @@ int main(int argc, char * argv[]) {
 
     glfwSetKeyCallback(mWindow, keyCallback);
     glfwSetCursorPosCallback(mWindow, cursorCallback);
-    glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // default value -> limited to window size
-    // glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);   // not limited
+    // glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // default value -> limited to window size
+    glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);   // not limited
     /*
      *  GLFW_CURSOR_DISABLED:
      *  mouse desaparece
      *  cada vez que se mueve a la izq, el valor decrementa (sin importar limites)
      *  cada vez que se mueve a la der, el valor aumenta (idem)
+     *  THIS IS NEEDED FOR THE CURRENT PLAYER-CAMERA CONTROLLER
      */
 
     // set viewport to use full available window space
@@ -233,9 +269,9 @@ int main(int argc, char * argv[]) {
 
     while (!glfwWindowShouldClose(mWindow)) {
 
-        glfwPollEvents();
         timer.update();
-        // updateCamera(camera);
+        glfwPollEvents();
+        updateCamera(camera);
 
         // rotationMat = glm::rotate(
         //         rotationMat,
@@ -289,22 +325,91 @@ int main(int argc, char * argv[]) {
 }
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode) {
+
+    if (action == GLFW_PRESS) {
+        keys[key] = true;
+    } else if (action == GLFW_RELEASE) {
+        keys[key] = false;
+    }
+
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         std::cout << "esc was pressed!\n";
         glfwSetWindowShouldClose(window, GL_TRUE);
     }
+
+    /*
+     * DONT CALL updateCamera here!
+     * CALL updateCamera EVERY FRAME (using the previous stored key state).
+     * when a key is pressed the input system stops
+     * emitting key press for a while and then report them all (STICKY KEYS)
+     */
 }
 
 void cursorCallback(GLFWwindow *window, double xpos, double ypos) {
     // (0,0) top left corner
-    std::cout << xpos << " " << ypos << "\n";
+    // std::cout << "moving cursos frame=" << timer.nrFrames << " mouse pos=(" << xpos << " " << ypos << ")\n";
 
     // reset mouse position
     // glfwSetCursorPos(window, mWidth / 2, mHeight / 2);
+
+    if (mouse.firstValue) {
+        mouse.lastX = xpos;
+        mouse.lastY = ypos;
+        mouse.firstValue = false;
+    }
+
+    GLfloat xOffset = xpos - mouse.lastX;
+    GLfloat yOffset = mouse.lastY - ypos;
+
+    std::cout << "moving cursos frame=" << timer.nrFrames << " offset =(" << xOffset << " " << yOffset << ")\n";
+
+    // update mouse object last values
+    mouse.lastX = xpos;
+    mouse.lastY = ypos;
+
+    xOffset *= mouse.sensitivity;
+    yOffset *= mouse.sensitivity;
+
+    camera.yaw      += xOffset;
+    camera.pitch    += yOffset;
+
+    // vertical angle constraint
+    if (camera.pitch > 89.0f) {
+        camera.pitch = 89.0f;
+    } else if (camera.pitch < -89.0f) {
+        camera.pitch = -89.0f;
+    }
+
+    glm::vec3 front;
+    front.x = cos(glm::radians(camera.pitch)) * cos(glm::radians(camera.yaw));
+    front.y = sin(glm::radians(camera.pitch));
+    front.z = cos(glm::radians(camera.pitch)) * sin(glm::radians(camera.yaw));
+    camera.front = glm::normalize(front);
+    camera.target = camera.position + camera.front;
 }
 
 void updateCamera(Camera & camera) {
     // rotate camera along y axis
-    float targetSpeed = (M_PI / 2.0f) / 5.0f;    // (90 grados in 5 seconds)
-    camera.rotate(0.0f, targetSpeed * timer.deltaTime, 0.0f);
+    // float targetSpeed = (M_PI / 2.0f) / 5.0f;    // (90 grados in 5 seconds)
+    // camera.rotate(0.0f, targetSpeed * timer.deltaTime, 0.0f);
+    // std::cout << "camera update frame=" << timer.nrFrames << "\n";
+
+    // move camera with wasd
+    if (keys[GLFW_KEY_W]) {
+        camera.position += camera.front * camera.movSpeed * timer.deltaTime;
+        camera.target = camera.position + camera.front;
+    }
+    if (keys[GLFW_KEY_S]) {
+        camera.position -= camera.front * camera.movSpeed * timer.deltaTime;
+        camera.target = camera.position + camera.front;
+    }
+    if (keys[GLFW_KEY_A]) {
+        camera.position -= glm::normalize(glm::cross(camera.front, camera.up)) * camera.movSpeed * timer.deltaTime;
+        camera.target = camera.position + camera.front;
+
+    }
+    if (keys[GLFW_KEY_D]) {
+        camera.position += glm::normalize(glm::cross(camera.front, camera.up)) * camera.movSpeed * timer.deltaTime;
+        camera.target = camera.position + camera.front;
+    }
 }
