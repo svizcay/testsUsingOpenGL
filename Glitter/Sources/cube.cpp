@@ -13,7 +13,7 @@ Cube::Cube() {
     glGenTextures(1, &texture1);
     glGenTextures(1, &texture2);
 
-    // TODO: get att locations
+    // TODO: get attr locations
     GLint positionAttrLocation = 0;
     GLint colorAttrLocation = 1;
     GLint uvAttrLocation = 2;
@@ -79,6 +79,7 @@ Cube::Cube() {
 
     // load and transfer texture1
     glBindTexture(GL_TEXTURE_2D, texture1);
+    // parameters can be set after transfering texture data
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, texBorderColor);
@@ -89,11 +90,12 @@ Cube::Cube() {
     int nrBytesPerPixel;
     unsigned char *image = stbi_load(
             "awesomeface.png",
+            // "lmcity_ft.tga",
             &textureWidth,
             &textureHeight,
             &nrBytesPerPixel,
             0);
-    std::cout << textureWidth << " " << textureHeight << " " << nrBytesPerPixel << "\n";
+    // std::cout << textureWidth << " " << textureHeight << " " << nrBytesPerPixel << "\n";
 
     GLenum srcFormat = (nrBytesPerPixel == 3) ? GL_RGB : GL_RGBA;
 
@@ -123,7 +125,7 @@ Cube::Cube() {
             &textureHeight,
             &nrBytesPerPixel,
             0);
-    std::cout << textureWidth << " " << textureHeight << " " << nrBytesPerPixel << "\n";
+    // std::cout << textureWidth << " " << textureHeight << " " << nrBytesPerPixel << "\n";
 
     srcFormat = (nrBytesPerPixel == 3) ? GL_RGB : GL_RGBA;
 
@@ -153,17 +155,28 @@ Cube::~Cube() {
     // TODO no hay delete texture?
 }
 
-void Cube::draw(Mirage::Shader *shaderPtr) {
+void Cube::draw(Mirage::Shader *shaderPtr, Camera & camera) {
     /*
      * TODO:
      * update transform matrices
      * bind new mat values
      */
+
+    shaderPtr->activate();
+
+    // locations
+    GLint viewLocation              = shaderPtr->getUniformLocation("view");
+    GLint projectionLocation        = shaderPtr->getUniformLocation("projection");
     GLint translationMatLocation    = shaderPtr->getUniformLocation("translationMat");
     GLint rotationMatLocation       = shaderPtr->getUniformLocation("rotationMat");
 
+    glm::mat4 view = camera.getView();
+    glm::mat4 projection = camera.getProjection();
+
     shaderPtr->bind(translationMatLocation, getTranslationMat());
     shaderPtr->bind(rotationMatLocation, getRotationMat());
+    shaderPtr->bind(viewLocation, view);
+    shaderPtr->bind(projectionLocation, projection);
 
     /*
      * el glActiveTexture se llama durante el draw

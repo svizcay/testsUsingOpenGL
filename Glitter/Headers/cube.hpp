@@ -6,6 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate and glm::scale
 
 #include <shader.hpp>
+#include <camera.hpp>
 
 // class Vertex {
 //     glm::vec3 position;
@@ -37,7 +38,7 @@ class Cube : public Transform {
     public:
         Cube();
         ~Cube();
-        void draw(Mirage::Shader *shaderPtr);
+        void draw(Mirage::Shader *shaderPtr, Camera & camera);
 
     private:
         // GLfloat positions[24] = {

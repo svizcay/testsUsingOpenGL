@@ -17,101 +17,15 @@
 #include <chrono>
 
 #include <shader.hpp>
+#include <camera.hpp>
 #include <cube.hpp>
 #include <quad.hpp>
+#include <skybox.hpp>
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
 void cursorCallback(GLFWwindow *window, double xpos, double ypos);
 void scrollCallback(GLFWwindow *window, double xOffset, double yOffset);
 
-
-class Camera {
-    public:
-        Camera() {
-            position    = glm::vec3(0.0f, 0.0f, 5.0f);
-            front       = glm::vec3(0.0f, 0.0f, -1.0f);
-            target      = position + front;
-            up          = glm::vec3(0.0f, 1.0f, 0.0f);
-
-            fov = 50.0f;    // in angles
-            defaultFOV = fov;
-            aspectRatio = 4.0f / 3.0f;
-            nearPlane = 0.01f;
-            farPlane = 100.0f;
-
-            movSpeed = 3.0f / 1.0f; // 1 unit in 1 second
-
-            pitch   = 0.0f;
-            yaw     = 270.0f;
-            roll    = 0.0f;
-
-            allowMouseMov = true;
-        }
-
-        // void setPosition(float x, float y, float z) { position = glm::vec3(x, y, z); }
-        void setFront(float x, float y, float z);
-        void setTarget(float x, float y, float z);
-        void setUp(float x, float y, float z);
-        void setFOV(float fov);
-        void setAspectRation(float aspectRatio);
-        void setNearPlane(float nearPlane);
-        void setFarPlane(float farPlane);
-
-        void rotate(glm::vec3 eulerAngles) {
-            rotate(eulerAngles.x, eulerAngles.y, eulerAngles.z);
-        }
-        /*
-         * using unity order of rotation (z, x and then y)
-         * TODO: ver si glm::rotateX esta usando radianes o grados
-         */
-        void rotate(float xAngle, float yAngle, float zAngle) {
-            // update target
-            glm::vec3 targetRelativeToCamera = target - position;
-
-            // rotate z
-            targetRelativeToCamera = glm::rotateZ(targetRelativeToCamera, zAngle);
-
-            // rotate x
-            targetRelativeToCamera = glm::rotateX(targetRelativeToCamera, xAngle);
-
-            // rotate y
-            targetRelativeToCamera = glm::rotateY(targetRelativeToCamera, yAngle);
-            target = targetRelativeToCamera + position;
-            // std::cout << "target: " << target.x << " " << target.y << " " << target.z << "\n";
-        }
-
-        glm::mat4 getView() {
-            return glm::lookAt(position, target, up);
-        }
-
-        glm::mat4 getProjection() {
-            return glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
-        }
-
-        glm::vec3 position;
-        glm::vec3 front;
-        glm::vec3 target;   // target = position + front
-        glm::vec3 up;
-        float movSpeed;
-        float fov;  // in angle
-
-        // rotation euler angles
-        GLfloat pitch;  // rotation x
-        GLfloat yaw;    // rotation y
-        GLfloat roll;   // rotation z
-
-        bool allowMouseMov;
-
-    private:
-        // view
-
-        // projection
-        float defaultFOV;
-        float aspectRatio;
-        float nearPlane;
-        float farPlane;
-
-};
 
 class Timer {
     public:
@@ -211,6 +125,11 @@ int main(int argc, char * argv[]) {
     shaderPtr->attach("Simple/vertex.vert.glsl");
     shaderPtr->attach("Simple/fragment.frag.glsl");
     shaderPtr->link();
+
+    Mirage::Shader *skyboxShaderPtr = new Mirage::Shader();
+    skyboxShaderPtr->attach("Skybox/vertex.vert.glsl");
+    skyboxShaderPtr->attach("Skybox/fragment.frag.glsl");
+    skyboxShaderPtr->link();
     /*
      * finding a uniform doesn't require a program to be active
      * but setting its value does it
@@ -225,8 +144,8 @@ int main(int argc, char * argv[]) {
     GLint baseColorLocation         = shaderPtr->getUniformLocation("baseColor");
     GLint translationMatLocation    = shaderPtr->getUniformLocation("translationMat");
     GLint rotationMatLocation       = shaderPtr->getUniformLocation("rotationMat");
-    GLint viewLocation              = shaderPtr->getUniformLocation("view");
-    GLint projectionLocation        = shaderPtr->getUniformLocation("projection");
+    // GLint viewLocation              = shaderPtr->getUniformLocation("view");
+    // GLint projectionLocation        = shaderPtr->getUniformLocation("projection");
 
     /*
      * glm::mat 4 each item is a glm::vec4 col
@@ -245,8 +164,8 @@ int main(int argc, char * argv[]) {
 
     shaderPtr->bind(translationMatLocation, translationMat);
     shaderPtr->bind(rotationMatLocation, rotationMat);
-    shaderPtr->bind(viewLocation, view);
-    shaderPtr->bind(projectionLocation, projection);
+    // shaderPtr->bind(viewLocation, view);
+    // shaderPtr->bind(projectionLocation, projection);
     shaderPtr->bind(baseColorLocation, 1.0f, 1.0f, 1.0f, 1.0f);
 
     float colorTransitionTime = 0.0f;
@@ -272,6 +191,8 @@ int main(int argc, char * argv[]) {
     thirdCube->position = glm::vec3(-5.0f, 0.0f, 5.0f);
     // Quad *quadPtr = new Quad();
 
+    Skybox *skybox = new Skybox();
+
     glEnable(GL_DEPTH_TEST);
     // glDepthFunc(GL_LESS);   // not required. GL_LESS is the default function
 
@@ -281,42 +202,21 @@ int main(int argc, char * argv[]) {
         glfwPollEvents();
         updateCamera(camera);
 
-        // rotationMat = glm::rotate(
-        //         rotationMat,
-        //         deltaTime,
-        //         glm::vec3(0.0f, 0.0f, 1.0f)
-        // );
-
-        // std::cout << "elapsedTime: " << elapsedTime << "\n";
-
         glClear(
                 GL_COLOR_BUFFER_BIT |
                 GL_DEPTH_BUFFER_BIT);
 
+        // view = camera.getView();
+        // projection = camera.getProjection();
 
-        // update Camera
-        // glm::vec3 newCameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
-        // glm::mat4 cameraRotationMat = glm::rotate(glm::mat4(), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        // for (int col = 0; col < 4; col++) {
-        //     for (int row = 0; row < 4; row++) {
-        //         std::cout << cameraRotationMat[col][row] << " ";
-        //     }
-        //     std::cout << "\n";
-        // }
-        // glm::vec4 newCameraTargetWithW = cameraRotationMat * glm::vec4(newCameraTarget, 1.0f);
-        // std::cout << newCameraTargetWithW[0] << " ";
-        // std::cout << newCameraTargetWithW[1] << " ";
-        // std::cout << newCameraTargetWithW[2] << " ";
-        // std::cout << newCameraTargetWithW[3] << "\n";
+        skybox->draw(skyboxShaderPtr, camera);
 
-        view = camera.getView();
-        projection = camera.getProjection();
-        shaderPtr->bind(viewLocation, view);
-        shaderPtr->bind(projectionLocation, projection);
+        // shaderPtr->bind(viewLocation, view);
+        // shaderPtr->bind(projectionLocation, projection);
 
-        firstCube->draw(shaderPtr);
-        secondCube->draw(shaderPtr);
-        thirdCube->draw(shaderPtr);
+        firstCube->draw(shaderPtr, camera);
+        secondCube->draw(shaderPtr, camera);
+        thirdCube->draw(shaderPtr, camera);
         // quadPtr->draw();
 
         // Flip Buffers and Draw
@@ -328,7 +228,10 @@ int main(int argc, char * argv[]) {
     delete thirdCube;
     // delete quadPtr;
 
+    delete skybox;
+
     delete shaderPtr;
+    delete skyboxShaderPtr;
 
     glfwTerminate();
     return EXIT_SUCCESS;
@@ -432,7 +335,7 @@ void scrollCallback(GLFWwindow *window, double xOffset, double yOffset) {
         camera.fov = 20.0f;
     }
 
-    std::cout << "[*] scroll (" << xOffset << ";" << yOffset << ") fov=" << camera.fov << "\n";
+    // std::cout << "[*] scroll (" << xOffset << ";" << yOffset << ") fov=" << camera.fov << "\n";
 
 }
 
