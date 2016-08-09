@@ -22,6 +22,7 @@
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
 void cursorCallback(GLFWwindow *window, double xpos, double ypos);
+void scrollCallback(GLFWwindow *window, double xOffset, double yOffset);
 
 
 class Camera {
@@ -32,7 +33,8 @@ class Camera {
             target      = position + front;
             up          = glm::vec3(0.0f, 1.0f, 0.0f);
 
-            fov = 45.0f;
+            fov = 50.0f;    // in angles
+            defaultFOV = fov;
             aspectRatio = 4.0f / 3.0f;
             nearPlane = 0.01f;
             farPlane = 100.0f;
@@ -83,7 +85,7 @@ class Camera {
         }
 
         glm::mat4 getProjection() {
-            return glm::perspective(fov, aspectRatio, nearPlane, farPlane);
+            return glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
         }
 
         glm::vec3 position;
@@ -91,6 +93,7 @@ class Camera {
         glm::vec3 target;   // target = position + front
         glm::vec3 up;
         float movSpeed;
+        float fov;  // in angle
 
         // rotation euler angles
         GLfloat pitch;  // rotation x
@@ -103,7 +106,7 @@ class Camera {
         // view
 
         // projection
-        float fov;  // in angle
+        float defaultFOV;
         float aspectRatio;
         float nearPlane;
         float farPlane;
@@ -188,6 +191,7 @@ int main(int argc, char * argv[]) {
 
     glfwSetKeyCallback(mWindow, keyCallback);
     glfwSetCursorPosCallback(mWindow, cursorCallback);
+    glfwSetScrollCallback(mWindow, scrollCallback);
     // glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // default value -> limited to window size
     glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);   // not limited
     /*
@@ -306,7 +310,9 @@ int main(int argc, char * argv[]) {
         // std::cout << newCameraTargetWithW[3] << "\n";
 
         view = camera.getView();
+        projection = camera.getProjection();
         shaderPtr->bind(viewLocation, view);
+        shaderPtr->bind(projectionLocation, projection);
 
         firstCube->draw(shaderPtr);
         secondCube->draw(shaderPtr);
@@ -404,6 +410,29 @@ void cursorCallback(GLFWwindow *window, double xpos, double ypos) {
         camera.front = glm::normalize(front);
         camera.target = camera.position + camera.front;
     }
+
+}
+
+/*
+ * cuando uno mueve la rueda hacia arriba, llega un yOffset=1
+ * cuando uno mueve la rueda hacia abajo, llega un yOffset=-1
+ */
+void scrollCallback(GLFWwindow *window, double xOffset, double yOffset) {
+
+    // zoom in == disminuir fov (rueda hacia arriba)
+    // zoom out == aumentar fov (rueda hacia abajo)
+
+    // update fov
+    camera.fov -= yOffset;
+
+    // constraint fov (20 grades == big zoom; 80 grades == wide angle;zoom out
+    if (camera.fov > 80.0f) {
+        camera.fov = 80.0f;
+    } else if (camera.fov < 20.0f) {
+        camera.fov = 20.0f;
+    }
+
+    std::cout << "[*] scroll (" << xOffset << ";" << yOffset << ") fov=" << camera.fov << "\n";
 
 }
 
