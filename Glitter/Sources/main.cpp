@@ -72,6 +72,129 @@ class Mouse {
 
 };
 
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec2 uv;
+};
+
+struct Texture {
+    GLuint id;
+    std::string type;
+};
+
+class Mesh {
+    public:
+        Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures) {
+            this->vertices  = vertices;
+            this->indices   = indices;
+            this->textures  = textures;
+
+            // generate ids
+            glGenVertexArrays(1, &vao);
+            glGenBuffers(1, &vbo);
+            glGenBuffers(1, &ebo);
+
+            // TODO: get attr locations
+            GLint positionAttrLocation = 0;
+            GLint normalAttrLocation = 1;
+            GLint uvAttrLocation = 2;
+
+            // configure vao
+            glBindVertexArray(vao);
+
+            // transfer data (all at once)
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            glBufferData(
+                    GL_ARRAY_BUFFER,
+                    vertices.size() * sizeof(Vertex),
+                    &vertices[0],
+                    GL_STATIC_DRAW);
+
+            // configure attr pointers
+
+            // attr position
+            glVertexAttribPointer(
+                    positionAttrLocation,
+                    3,                      // nr values per vertex
+                    GL_FLOAT,               // data type
+                    GL_FALSE,               // should be normalized
+                    sizeof(Vertex),         // stride (0=tight)
+                    (GLvoid*)0);            // offset
+            glEnableVertexAttribArray(positionAttrLocation);
+
+            // attr normal
+            glVertexAttribPointer(
+                    normalAttrLocation,
+                    3,                                      // nr values per vertex
+                    GL_FLOAT,                               // data type
+                    GL_FALSE,                               // should be normalized
+                    sizeof(Vertex),                         // stride (0=tight)
+                    (GLvoid*)offsetof(Vertex, normal));     // offset
+            glEnableVertexAttribArray(normalAttrLocation);
+
+            // attr uv
+            glVertexAttribPointer(
+                    uvAttrLocation,
+                    2,                                      // nr values per vertex
+                    GL_FLOAT,                               // data type
+                    GL_FALSE,                               // should be normalized
+                    sizeof(Vertex),                         // stride (0=tight)
+                    (GLvoid*)offsetof(Vertex, uv));         // offset
+            glEnableVertexAttribArray(uvAttrLocation);
+
+            // transfer data: vertex indices
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+            glBufferData(
+                    GL_ELEMENT_ARRAY_BUFFER,
+                    indices.size() * sizeof(GLuint),
+                    &indices[0],
+                    GL_STATIC_DRAW);
+
+            // end vao config
+            glBindVertexArray(0);
+        }
+
+        ~Mesh() {
+            glDeleteBuffers(1, &vbo);
+            glDeleteBuffers(1, &ebo);
+            glDeleteVertexArrays(1, &vao);
+        }
+        void draw(Mirage::Shader *shaderPtr) {
+            GLuint diffuseNr = 1;
+            GLuint specularNr = 1;
+            for (GLuint i = 0; i < textures.size(); i++) {
+                glActiveTexture(GL_TEXTURE0 + i);
+                std::stringstream ss;
+                std::string number;
+                std::string name = textures[i].type;
+                if (name == "texture_diffuse") {
+                    ss << diffuseNr++;
+                } else if (name == "texture_specular") {
+                    ss << specularNr++;
+                }
+                number = ss.str();
+
+                // TODO: use "Shader" bind method
+                glUniform1f(glGetUniformLocation(*shaderPtr, ("material." + name + number).c_str()), i);
+                glBindTexture(GL_TEXTURE_2D, textures[i].id);
+            }
+            glActiveTexture(GL_TEXTURE0);
+
+            // draw mesh
+        }
+
+        std::vector<Vertex> vertices;
+        std::vector<GLuint> indices;
+        std::vector<Texture> textures;
+
+    private:
+        GLuint vao;
+        GLuint vbo;
+        GLuint ebo;
+
+};
+
 void updateCamera(Camera & camera);
 
 // globals
