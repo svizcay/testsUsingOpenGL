@@ -16,6 +16,9 @@
 #include <cmath>
 #include <chrono>
 
+#include <string>
+#include <sstream>
+
 #include <shader.hpp>
 #include <camera.hpp>
 #include <cube.hpp>
@@ -26,6 +29,7 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode
 void cursorCallback(GLFWwindow *window, double xpos, double ypos);
 void scrollCallback(GLFWwindow *window, double xOffset, double yOffset);
 
+GLint textureFromFile(const char * path, std::string directory);
 
 class Timer {
     public:
@@ -81,6 +85,7 @@ struct Vertex {
 struct Texture {
     GLuint id;
     std::string type;
+    aiString path;
 };
 
 class Mesh {
@@ -96,9 +101,9 @@ class Mesh {
             glGenBuffers(1, &ebo);
 
             // TODO: get attr locations
-            GLint positionAttrLocation = 0;
-            GLint normalAttrLocation = 1;
-            GLint uvAttrLocation = 2;
+            GLint positionAttrLocation  = 0;
+            GLint normalAttrLocation    = 1;
+            GLint uvAttrLocation        = 2;
 
             // configure vao
             glBindVertexArray(vao);
@@ -160,9 +165,14 @@ class Mesh {
             glDeleteBuffers(1, &ebo);
             glDeleteVertexArrays(1, &vao);
         }
+
         void draw(Mirage::Shader *shaderPtr) {
+
+            shaderPtr->activate();
+
             GLuint diffuseNr = 1;
             GLuint specularNr = 1;
+            // std::cout << "mesh nr textures: " << textures.size() << "\n";
             for (GLuint i = 0; i < textures.size(); i++) {
                 glActiveTexture(GL_TEXTURE0 + i);
                 std::stringstream ss;
@@ -176,12 +186,29 @@ class Mesh {
                 number = ss.str();
 
                 // TODO: use "Shader" bind method
-                glUniform1f(glGetUniformLocation(*shaderPtr, ("material." + name + number).c_str()), i);
+                // std::string uniformName = "material." + name + number;
+                std::string uniformName = name + number;
+                // std::cout << "uniformName: " << uniformName << "\n";
+                // GLint materialLoc = shaderPtr->getUniformLocation(uniformName);
+                // std::cout << "materialLoc: " << materialLoc << "\n";
+
+                // glUniform1f(glGetUniformLocation(shaderPtr->get(), ("material." + name + number).c_str()), i);
+                // shaderPtr->bind(materialLoc, i);
+                // glUniform1f(glGetUniformLocation(shaderPtr->get(), (name + number).c_str()), i);
+                glUniform1i(glGetUniformLocation(shaderPtr->get(), uniformName.c_str()), i);
                 glBindTexture(GL_TEXTURE_2D, textures[i].id);
             }
+
             glActiveTexture(GL_TEXTURE0);
 
             // draw mesh
+            glBindVertexArray(vao);
+            glDrawElements(
+                    GL_TRIANGLES,
+                    indices.size(),
+                    GL_UNSIGNED_INT,
+                    0);
+            glBindVertexArray(0);
         }
 
         std::vector<Vertex> vertices;
@@ -192,6 +219,131 @@ class Mesh {
         GLuint vao;
         GLuint vbo;
         GLuint ebo;
+
+};
+
+class Model {
+    public:
+        Model(GLchar *path) { loadModel(path); }
+        void draw(Mirage::Shader *shaderPtr) {
+            for (GLuint i = 0; i < meshes.size(); i++) {
+                meshes[i].draw(shaderPtr);
+            }
+        }
+
+    private:
+        std::vector<Mesh> meshes;
+        std::string directory;
+
+        void loadModel(std::string path) {
+            Assimp::Importer importer;
+            const aiScene *scene = importer.ReadFile(path,
+                    aiProcess_Triangulate | aiProcess_FlipUVs);
+            if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+                std::cerr << "ERROR::ASSIMP::" << importer.GetErrorString() << "\n";
+                return;
+            }
+            directory = path.substr(0, path.find_last_of("/"));
+            std::cout << "directory: " << directory << "\n";
+            processNode(scene->mRootNode, scene);
+        }
+
+        void processNode(aiNode * node, const aiScene * scene) {
+            // process node meshes
+            std::cout << "nr meshes: " << node->mNumMeshes << "\n";
+            for (GLuint i = 0; i < node->mNumMeshes; i++) {
+                aiMesh * mesh = scene->mMeshes[node->mMeshes[i]];
+                meshes.push_back(processMesh(mesh, scene));
+            }
+
+            // process children
+            for (GLuint i = 0; i < node->mNumChildren; i++) {
+                processNode(node->mChildren[i], scene);
+            }
+        }
+
+        Mesh processMesh(aiMesh * mesh, const aiScene * scene) {
+            std::vector<Vertex> vertices;
+            std::vector<GLuint> indices;
+            std::vector<Texture> textures;
+
+            // process vertices
+            for (GLuint i = 0; i < mesh->mNumVertices; i++) {
+                Vertex vertex;
+                
+                glm::vec3 vector;
+                // process vertex positions, normals and uvs
+                vector.x = mesh->mVertices[i].x;
+                vector.y = mesh->mVertices[i].y;
+                vector.z = mesh->mVertices[i].z;
+                vertex.position = vector;
+
+                vector.x = mesh->mNormals[i].x;
+                vector.y = mesh->mNormals[i].y;
+                vector.z = mesh->mNormals[i].z;
+                vertex.normal = vector;
+
+                if (mesh->mTextureCoords[0]) {
+                    glm::vec2 vec;
+                    vec.x = mesh->mTextureCoords[0][i].x;
+                    vec.y = mesh->mTextureCoords[0][i].y;
+                    vertex.uv = vec;
+                } else {
+                    vertex.uv = glm::vec2(0.0f, 0.0f);
+                }
+
+
+                vertices.push_back(vertex);
+            }
+
+            // process indices
+            for (GLuint i = 0; i < mesh->mNumFaces; i++) {
+                aiFace face = mesh->mFaces[i];
+                for (GLuint j = 0; j < face.mNumIndices; j++) {
+                    indices.push_back(face.mIndices[j]);
+                }
+            }
+
+            // process materials
+            if (mesh->mMaterialIndex >= 0) {
+                aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
+                std::vector<Texture> diffuseMaps = loadMaterialTextures(
+                        material,
+                        aiTextureType_DIFFUSE,
+                        "texture_diffuse");
+                textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+
+                std::vector<Texture> specularMaps = loadMaterialTextures(
+                        material,
+                        aiTextureType_SPECULAR,
+                        "texture_specular");
+                textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+
+            }
+
+            return Mesh(vertices, indices, textures);
+        }
+
+        std::vector<Texture> loadMaterialTextures(
+                aiMaterial * material,
+                aiTextureType type,
+                std::string typeName)
+        {
+            std::cout << "getting texture of type: " << typeName << " (" << type << ")\n";
+            std::vector<Texture> textures;
+            for (GLuint i = 0; i < material->GetTextureCount(type); i++) {
+                aiString str;
+                material->GetTexture(type, i, &str);
+                Texture texture;
+                texture.id = textureFromFile(str.C_Str(), directory);
+                texture.type = typeName;
+                texture.path = str;
+                textures.push_back(texture);
+
+            }
+
+            return textures;
+        }
 
 };
 
@@ -253,6 +405,12 @@ int main(int argc, char * argv[]) {
     skyboxShaderPtr->attach("Skybox/vertex.vert.glsl");
     skyboxShaderPtr->attach("Skybox/fragment.frag.glsl");
     skyboxShaderPtr->link();
+
+    Mirage::Shader *meshShaderPtr = new Mirage::Shader();
+    meshShaderPtr->attach("Mesh/vertex.vert.glsl");
+    meshShaderPtr->attach("Mesh/fragment.frag.glsl");
+    meshShaderPtr->link();
+
     /*
      * finding a uniform doesn't require a program to be active
      * but setting its value does it
@@ -316,6 +474,8 @@ int main(int argc, char * argv[]) {
 
     Skybox *skybox = new Skybox();
 
+    Model model1 ("nanosuit/nanosuit.obj");
+
     glEnable(GL_DEPTH_TEST);
     // glDepthFunc(GL_LESS);   // not required. GL_LESS is the default function
 
@@ -329,18 +489,32 @@ int main(int argc, char * argv[]) {
                 GL_COLOR_BUFFER_BIT |
                 GL_DEPTH_BUFFER_BIT);
 
-        // view = camera.getView();
-        // projection = camera.getProjection();
+        view = camera.getView();
+        projection = camera.getProjection();
 
-        skybox->draw(skyboxShaderPtr, camera);
+        // skybox->draw(skyboxShaderPtr, camera);
 
         // shaderPtr->bind(viewLocation, view);
         // shaderPtr->bind(projectionLocation, projection);
 
-        firstCube->draw(shaderPtr, camera);
-        secondCube->draw(shaderPtr, camera);
-        thirdCube->draw(shaderPtr, camera);
+        // firstCube->draw(shaderPtr, camera);
+        // secondCube->draw(shaderPtr, camera);
+        // thirdCube->draw(shaderPtr, camera);
         // quadPtr->draw();
+
+
+        meshShaderPtr->activate();
+        GLint modelLocation         = meshShaderPtr->getUniformLocation("model");
+        GLint viewLocation          = meshShaderPtr->getUniformLocation("view");
+        GLint projectionLocation    = meshShaderPtr->getUniformLocation("projection");
+
+        std::cout << "locations: " << modelLocation << " " << viewLocation << " " << projectionLocation << "\n";
+
+        meshShaderPtr->bind(modelLocation, glm::mat4());
+        meshShaderPtr->bind(viewLocation, view);
+        meshShaderPtr->bind(projectionLocation, projection);
+
+        model1.draw(meshShaderPtr);
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
@@ -355,6 +529,7 @@ int main(int argc, char * argv[]) {
 
     delete shaderPtr;
     delete skyboxShaderPtr;
+    delete meshShaderPtr;
 
     glfwTerminate();
     return EXIT_SUCCESS;
@@ -486,4 +661,46 @@ void updateCamera(Camera & camera) {
         camera.position += glm::normalize(glm::cross(camera.front, camera.up)) * camera.movSpeed * timer.deltaTime;
         camera.target = camera.position + camera.front;
     }
+}
+
+GLint textureFromFile(const char * path, std::string directory) {
+    std::string filename = std::string(path);
+    filename = directory + "/" + filename;
+    std::cout << "texture filename: " << filename << "\n";
+
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    int textureWidth, textureHeight;
+    int nrBytesPerPixel;
+    // unsigned char* image = SOIL_load_image(filename.c_str(), &width, &height, 0, SOIL_LOAD_RGB);
+    unsigned char *image = stbi_load(
+            filename.c_str(),
+            &textureWidth,
+            &textureHeight,
+            &nrBytesPerPixel,
+            0);
+    GLenum srcFormat = (nrBytesPerPixel == 3) ? GL_RGB : GL_RGBA;
+    // std::cout << textureWidth << "x" << textureHeight << " with " << nrBytesPerPixel << " channels\n";
+    // Assign texture to ID
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGB,
+            textureWidth, textureHeight,
+            0,
+            srcFormat,
+            GL_UNSIGNED_BYTE,
+            image);
+    glGenerateMipmap(GL_TEXTURE_2D);	
+
+    // Parameters
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    // SOIL_free_image_data(image);
+    stbi_image_free(image);
+    return textureID;
 }

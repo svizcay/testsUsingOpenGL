@@ -186,10 +186,10 @@ void Cube::draw(Mirage::Shader *shaderPtr, Camera & camera) {
      */
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture1);
-    // glUniform1i(glGetUniformLocation(program, "mainTexture"), 0);
+    glUniform1i(glGetUniformLocation(shaderPtr->get(), "mainTexture"), 0);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture2);
-    // glUniform1i(glGetUniformLocation(program, "secondTexture"), 1);
+    glUniform1i(glGetUniformLocation(shaderPtr->get(), "secondTexture"), 1);
     glBindVertexArray(vao);
     glDrawElements(
             GL_TRIANGLES,
