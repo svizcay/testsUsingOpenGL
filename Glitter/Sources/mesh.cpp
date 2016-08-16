@@ -6,6 +6,7 @@
 
 // System Headers
 #include <stb_image.h>
+#include <iostream>
 
 // Define Namespace
 namespace Mirage
@@ -15,7 +16,7 @@ namespace Mirage
         // Load a Model from File
         Assimp::Importer loader;
         aiScene const * scene = loader.ReadFile(
-            PROJECT_SOURCE_DIR "/Mirage/Models/" + filename,
+            PROJECT_SOURCE_DIR "/Build/" + filename,
             aiProcessPreset_TargetRealtime_MaxQuality |
             aiProcess_OptimizeGraph                   |
             aiProcess_FlipUVs);
@@ -166,4 +167,4 @@ namespace Mirage
             textures.insert(std::make_pair(texture, mode));
         }   return textures;
     }
-};
+}

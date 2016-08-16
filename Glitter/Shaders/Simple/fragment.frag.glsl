@@ -21,4 +21,6 @@ void main() {
     vec4 simpleColor = baseColor * vec4(v2fColor, 1.0);
     outColor = texColor * simpleColor;
     // outColor = texture(mainTexture, vec2(v2fUV.x, 1-v2fUV.y));
+
+    outColor = vec4(v2fColor, 1.0);
 }

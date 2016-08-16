@@ -1,12 +1,15 @@
 #include "cube.hpp"
 
-#include "glitter.hpp"
 #include <iostream>
+
+#include "glitter.hpp"
+#include "behaviour.hpp"
 
 Cube::Cube() {
     // generate ids
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vboPositions);
+    glGenBuffers(1, &vboNormals);
     glGenBuffers(1, &vboColors);
     glGenBuffers(1, &vboTextureCoords);
     glGenBuffers(1, &ebo);
@@ -148,6 +151,7 @@ Cube::Cube() {
 
 Cube::~Cube() {
     glDeleteBuffers(1, &vboPositions);
+    glDeleteBuffers(1, &vboNormals);
     glDeleteBuffers(1, &vboColors);
     glDeleteBuffers(1, &vboTextureCoords);
     glDeleteBuffers(1, &ebo);
@@ -173,8 +177,8 @@ void Cube::draw(Mirage::Shader *shaderPtr, Camera & camera) {
     glm::mat4 view = camera.getView();
     glm::mat4 projection = camera.getProjection();
 
-    shaderPtr->bind(translationMatLocation, getTranslationMat());
-    shaderPtr->bind(rotationMatLocation, getRotationMat());
+    shaderPtr->bind(translationMatLocation, transform.getTranslationMat());
+    shaderPtr->bind(rotationMatLocation, transform.getRotationMat());
     shaderPtr->bind(viewLocation, view);
     shaderPtr->bind(projectionLocation, projection);
 
@@ -197,4 +201,11 @@ void Cube::draw(Mirage::Shader *shaderPtr, Camera & camera) {
             GL_UNSIGNED_INT,
             0);                 // offset
     glBindVertexArray(0);
+}
+
+void Cube::update() {
+    for (auto iter = behaviours.begin(); iter != behaviours.end(); iter++) {
+        Behaviour * behaviourPtr = *iter;
+        behaviourPtr->onUpdate();
+    }
 }

@@ -15,15 +15,18 @@
 #include <iostream>
 #include <cmath>
 #include <chrono>
+#include <functional>
 
 #include <string>
 #include <sstream>
 
-#include <shader.hpp>
-#include <camera.hpp>
-#include <cube.hpp>
-#include <quad.hpp>
-#include <skybox.hpp>
+#include "shader.hpp"
+#include "mesh.hpp"
+#include "camera.hpp"
+#include "cube.hpp"
+#include "quad.hpp"
+#include "skybox.hpp"
+#include "behaviour.hpp"
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
 void cursorCallback(GLFWwindow *window, double xpos, double ypos);
@@ -76,6 +79,19 @@ class Mouse {
 
 };
 
+class Light : public Cube {
+    public:
+        Light(glm::vec3 color=glm::vec3(0.0f, 0.0f, 0.0f)) {
+            this->color = color;
+        }
+
+        ~Light() {}
+        glm::vec3 color;
+
+    protected:
+
+};
+
 struct Vertex {
     glm::vec3 position;
     glm::vec3 normal;
@@ -88,6 +104,7 @@ struct Texture {
     aiString path;
 };
 
+/*
 class Mesh {
     public:
         Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures) {
@@ -270,7 +287,7 @@ class Model {
             // process vertices
             for (GLuint i = 0; i < mesh->mNumVertices; i++) {
                 Vertex vertex;
-                
+
                 glm::vec3 vector;
                 // process vertex positions, normals and uvs
                 vector.x = mesh->mVertices[i].x;
@@ -346,6 +363,8 @@ class Model {
         }
 
 };
+*/
+
 
 void updateCamera(Camera & camera);
 
@@ -354,6 +373,73 @@ Camera camera;
 Timer timer;
 Mouse mouse;
 bool keys[1024];
+
+/*
+ * create your own Behaviour that extends the base Behaviour class
+ * example: a MoveCube class
+ */
+class MoveCube : public Behaviour {
+    public:
+        MoveCube(Cube & obj) : Behaviour(obj) {
+            std::cout << "movecube constructor" << "\n";
+            obj.behaviours.push_back(this);
+            std::cout << obj.behaviours.size() << "\n";
+            onStart();
+        }
+        void onStart() override {
+            std::cout << "onStart" << "\n";
+            std::cout << "object position: ";
+            std::cout << object.transform.position.x << " ";
+            std::cout << object.transform.position.y << " ";
+            std::cout << object.transform.position.z << "\n";
+
+            initialPosition = object.transform.position;
+            targetPosition += initialPosition;
+            forwardDirection = glm::normalize(targetPosition - initialPosition);
+        }
+
+        void onUpdate() override {
+            // std::cout << "onUpdate" << "\n";
+            if (goingForward) {
+                glm::vec3 direction = targetPosition - object.transform.position;
+                float distance = glm::distance(object.transform.position, targetPosition);
+                bool isDistanceZero = (distance < marginError) ? true : false;
+                bool isDirectionZero = (direction.x == 0 && direction.y == 0 && direction.z == 0) ? true : false;
+                direction = glm::normalize(direction);
+
+                if (isDirectionZero || isDistanceZero || (direction * -1.0f) == forwardDirection) {
+                    goingForward = false;
+                } else {
+                    direction *= movSpeed * timer.deltaTime;
+                    object.transform.position += direction;
+                }
+            } else {
+                glm::vec3 direction = initialPosition - object.transform.position;
+                float distance = glm::distance(object.transform.position, initialPosition);
+                bool isDistanceZero = (distance < marginError) ? true : false;
+                bool isDirectionZero = (direction.x == 0 && direction.y == 0 && direction.z == 0) ? true : false;
+                direction = glm::normalize(direction);
+
+                if (isDirectionZero || isDistanceZero || direction == forwardDirection) {
+                    goingForward = true;
+                } else {
+                    direction *= movSpeed * timer.deltaTime;
+                    object.transform.position += direction;
+                }
+            }
+        }
+
+        glm::vec3 targetPosition = glm::vec3(0, 0, -10);  // 10 units front
+        glm::vec3 initialPosition;
+        glm::vec3 forwardDirection;
+        bool goingForward = true;
+        /*
+         * const speed
+         */
+        float movSpeed = 5.0f / 1.0f;   // 1 units in 1 second
+        float marginError = 0.005f;
+};
+
 
 int main(int argc, char * argv[]) {
 
@@ -467,14 +553,29 @@ int main(int argc, char * argv[]) {
 
     Cube *firstCube = new Cube();
     Cube *secondCube = new Cube();
-    secondCube->position = glm::vec3(5.0f, 0.0f, 5.0f);
+    secondCube->transform.position = glm::vec3(5.0f, 0.0f, 5.0f);
     Cube *thirdCube = new Cube();
-    thirdCube->position = glm::vec3(-5.0f, 0.0f, 5.0f);
+    thirdCube->transform.position = glm::vec3(-5.0f, 0.0f, 5.0f);
     // Quad *quadPtr = new Quad();
+
+    MoveCube moveCubeBehaviour (*thirdCube);
+
+    // std::cout << "size of cube in bytes: " << sizeof(Cube) << "\n";
+    // std::cout << "memory address using printf and %p" << "\n";
+    // printf("%p firstCube\n", (void *)firstCube);
+    // printf("%p secondCube\n", (void *)secondCube);
+    // std::cout << "memory address using iostream" << "\n";
+    // std::cout << firstCube << " firstCube" << "\n";
+    // std::cout << secondCube << " secondCube" << "\n";
+
 
     Skybox *skybox = new Skybox();
 
-    Model model1 ("nanosuit/nanosuit.obj");
+    // Model model1 ("nanosuit/nanosuit.obj");
+    Mirage::Mesh *mesh1 = new Mirage::Mesh("nanosuit2/nanosuit2.obj");
+
+    Light *light = new Light();
+    light->transform.position = glm::vec3(5.0f, 0.0f, 0.0f);
 
     glEnable(GL_DEPTH_TEST);
     // glDepthFunc(GL_LESS);   // not required. GL_LESS is the default function
@@ -492,15 +593,18 @@ int main(int argc, char * argv[]) {
         view = camera.getView();
         projection = camera.getProjection();
 
-        // skybox->draw(skyboxShaderPtr, camera);
+        skybox->draw(skyboxShaderPtr, camera);
 
         // shaderPtr->bind(viewLocation, view);
         // shaderPtr->bind(projectionLocation, projection);
 
         // firstCube->draw(shaderPtr, camera);
         // secondCube->draw(shaderPtr, camera);
-        // thirdCube->draw(shaderPtr, camera);
+        thirdCube->update();
+        thirdCube->draw(shaderPtr, camera);
         // quadPtr->draw();
+
+        light->draw(shaderPtr, camera);
 
 
         meshShaderPtr->activate();
@@ -508,13 +612,14 @@ int main(int argc, char * argv[]) {
         GLint viewLocation          = meshShaderPtr->getUniformLocation("view");
         GLint projectionLocation    = meshShaderPtr->getUniformLocation("projection");
 
-        std::cout << "locations: " << modelLocation << " " << viewLocation << " " << projectionLocation << "\n";
+        // std::cout << "locations: " << modelLocation << " " << viewLocation << " " << projectionLocation << "\n";
 
         meshShaderPtr->bind(modelLocation, glm::mat4());
         meshShaderPtr->bind(viewLocation, view);
         meshShaderPtr->bind(projectionLocation, projection);
 
-        model1.draw(meshShaderPtr);
+        // model1.draw(meshShaderPtr);
+        mesh1->draw(meshShaderPtr->get());
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);
@@ -525,7 +630,11 @@ int main(int argc, char * argv[]) {
     delete thirdCube;
     // delete quadPtr;
 
+    delete light;
+
     delete skybox;
+
+    delete mesh1;
 
     delete shaderPtr;
     delete skyboxShaderPtr;
@@ -692,7 +801,7 @@ GLint textureFromFile(const char * path, std::string directory) {
             srcFormat,
             GL_UNSIGNED_BYTE,
             image);
-    glGenerateMipmap(GL_TEXTURE_2D);	
+    glGenerateMipmap(GL_TEXTURE_2D);
 
     // Parameters
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );

@@ -2,9 +2,10 @@
 #define CUBE_HPP
 
 #include <glad/glad.h>  // it will include opengl things like GLfloat and so on
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate and glm::scale
 
+#include <vector>
+
+#include <transform.hpp>
 #include <shader.hpp>
 #include <camera.hpp>
 
@@ -14,33 +15,19 @@
 //     glm::vec2 uv;
 // };
 
-class Transform {
-    public:
-        Transform() {}
-        glm::mat4 getTranslationMat() { return glm::translate(glm::mat4(1.0f), position); }
-        glm::mat4 getRotationMat() { 
-            // TODO check quaternions
-            glm::mat4 mat = glm::mat4(1.0f);
-            mat = glm::rotate(mat, eulerAngles.z * 180.0f / (float) M_PI, glm::vec3(0.0f, 0.0f, 1.0f));
-            mat = glm::rotate(mat, eulerAngles.x * 180.0f / (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f));
-            mat = glm::rotate(mat, eulerAngles.y * 180.0f / (float) M_PI, glm::vec3(0.0f, 1.0f, 0.0f));
-            return mat;
-        }
-        glm::mat4 getScaleMat() { return glm::scale(glm::mat4(1.0f), localScale); }
-        glm::vec3 position;
-        glm::vec3 eulerAngles;
-        glm::vec3 localScale;
+class Behaviour;
 
-    private:
-};
-
-class Cube : public Transform {
+class Cube {
     public:
         Cube();
         ~Cube();
         void draw(Mirage::Shader *shaderPtr, Camera & camera);
+        void update();
 
-    private:
+        Transform transform;
+        std::vector<Behaviour*> behaviours;
+    protected:
+
         // GLfloat positions[24] = {
         //     // front face
         //     -0.5f,  -0.5f,  0.5f,
@@ -237,6 +224,7 @@ class Cube : public Transform {
 
         GLuint vao;
         GLuint vboPositions;
+        GLuint vboNormals;
         GLuint vboColors;
         GLuint vboTextureCoords;
         GLuint ebo;
