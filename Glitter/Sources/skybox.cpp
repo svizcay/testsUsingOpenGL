@@ -45,12 +45,12 @@ Skybox::Skybox() {
     // load and transfer texture
     // TODO: is it glActiveTexture required?
     std::vector<const GLchar*> faces;
-    faces.push_back("right.jpg");
-    faces.push_back("left.jpg");
-    faces.push_back("top.jpg");
-    faces.push_back("bottom.jpg");
-    faces.push_back("back.jpg");
-    faces.push_back("front.jpg");
+    faces.push_back(PROJECT_SOURCE_DIR "/Glitter/Assets/Arts/SpaceSkybox/right.jpg");
+    faces.push_back(PROJECT_SOURCE_DIR "/Glitter/Assets/Arts/SpaceSkybox/left.jpg");
+    faces.push_back(PROJECT_SOURCE_DIR "/Glitter/Assets/Arts/SpaceSkybox/top.jpg");
+    faces.push_back(PROJECT_SOURCE_DIR "/Glitter/Assets/Arts/SpaceSkybox/bottom.jpg");
+    faces.push_back(PROJECT_SOURCE_DIR "/Glitter/Assets/Arts/SpaceSkybox/back.jpg");
+    faces.push_back(PROJECT_SOURCE_DIR "/Glitter/Assets/Arts/SpaceSkybox/front.jpg");
 
     glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
 
