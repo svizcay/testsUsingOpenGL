@@ -382,7 +382,6 @@ class MoveCube : public Behaviour {
     public:
         MoveCube(Cube & obj) : Behaviour(obj) {
             std::cout << "movecube constructor" << "\n";
-            obj.behaviours.push_back(this);
             std::cout << obj.behaviours.size() << "\n";
             onStart();
         }
@@ -443,7 +442,6 @@ class MoveCube : public Behaviour {
 class RotateAround : public Behaviour {
     public:
         RotateAround(Cube & obj) : Behaviour(obj) {
-            obj.behaviours.push_back(this);
             onStart();
         }
 

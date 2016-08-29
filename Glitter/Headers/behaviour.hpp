@@ -7,6 +7,7 @@ class Behaviour {
     public:
         Behaviour(Cube & obj) : object(obj) {
             std::cout << "behaviour constructor" << "\n";
+            obj.behaviours.push_back(this);
         }
         virtual void onStart() = 0;
         virtual void onUpdate() = 0;
