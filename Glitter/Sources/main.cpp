@@ -436,8 +436,36 @@ class MoveCube : public Behaviour {
         /*
          * const speed
          */
-        float movSpeed = 5.0f / 1.0f;   // 1 units in 1 second
+        float movSpeed = 5.0f / 1.0f;   // 5 units in 1 second
         float marginError = 0.005f;
+};
+
+class RotateAround : public Behaviour {
+    public:
+        RotateAround(Cube & obj) : Behaviour(obj) {
+            obj.behaviours.push_back(this);
+            onStart();
+        }
+
+        void onStart() override {
+
+        }
+
+        void onUpdate() override {
+            glm::vec3 angularMov = angularSpeed * timer.deltaTime * glm::vec3(0, 1, 0);
+            object.transform.eulerAngles += angularMov;
+            object.transform.eulerAngles.x = fmod(object.transform.eulerAngles.x, 360.f);
+            object.transform.eulerAngles.y = fmod(object.transform.eulerAngles.y, 360.f);
+            object.transform.eulerAngles.z = fmod(object.transform.eulerAngles.z, 360.f);
+
+            // std::cout << "eulerAngles: ";
+            // std::cout << object.transform.eulerAngles.x << " ";
+            // std::cout << object.transform.eulerAngles.y << " ";
+            // std::cout << object.transform.eulerAngles.z << "\n";
+        }
+
+        // Cube & targetGameObject;
+        float angularSpeed = 360.0f / 1.0f;   // 360 degree in 1 second
 };
 
 
@@ -559,6 +587,7 @@ int main(int argc, char * argv[]) {
     // Quad *quadPtr = new Quad();
 
     MoveCube moveCubeBehaviour (*thirdCube);
+    RotateAround rotateAroundBehaviour (*secondCube);
 
     // std::cout << "size of cube in bytes: " << sizeof(Cube) << "\n";
     // std::cout << "memory address using printf and %p" << "\n";
@@ -599,7 +628,8 @@ int main(int argc, char * argv[]) {
         // shaderPtr->bind(projectionLocation, projection);
 
         // firstCube->draw(shaderPtr, camera);
-        // secondCube->draw(shaderPtr, camera);
+        secondCube->update();
+        secondCube->draw(shaderPtr, camera);
         thirdCube->update();
         thirdCube->draw(shaderPtr, camera);
         // quadPtr->draw();
