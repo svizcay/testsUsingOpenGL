@@ -27,41 +27,13 @@
 #include "quad.hpp"
 #include "skybox.hpp"
 #include "behaviour.hpp"
+#include "timer.hpp"
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
 void cursorCallback(GLFWwindow *window, double xpos, double ypos);
 void scrollCallback(GLFWwindow *window, double xOffset, double yOffset);
 
 GLint textureFromFile(const char * path, std::string directory);
-
-class Timer {
-    public:
-        Timer() {
-            start = std::chrono::high_resolution_clock::now();
-            previousTime = 0.0f;
-            nrFrames = 0;
-        }
-
-        void update() {
-            now = std::chrono::high_resolution_clock::now();
-            elapsedTime = std::chrono::duration_cast<std::chrono::duration<float>>(now-start).count();
-            deltaTime = elapsedTime - previousTime;
-            previousTime = elapsedTime;
-            nrFrames++;
-            fps = nrFrames / elapsedTime;
-        }
-
-        float deltaTime;        // since last frame
-        long long nrFrames;
-
-    private:
-        std::chrono::high_resolution_clock::time_point start;
-        std::chrono::high_resolution_clock::time_point now;
-        float previousTime;
-        float elapsedTime;      // since the beginning
-
-        float fps;
-};
 
 class Mouse {
     public:
