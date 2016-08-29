@@ -28,28 +28,13 @@
 #include "skybox.hpp"
 #include "behaviour.hpp"
 #include "timer.hpp"
+#include "mouse.hpp"
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
 void cursorCallback(GLFWwindow *window, double xpos, double ypos);
 void scrollCallback(GLFWwindow *window, double xOffset, double yOffset);
 
 GLint textureFromFile(const char * path, std::string directory);
-
-class Mouse {
-    public:
-        Mouse() {
-            lastX = 0;
-            lastY = 0;
-            firstValue = true;
-        }
-        GLfloat lastX;
-        GLfloat lastY;
-        bool firstValue;
-        GLfloat sensitivity = 0.05f;
-
-    private:
-
-};
 
 class Light : public Cube {
     public:
