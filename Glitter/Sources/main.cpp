@@ -338,16 +338,16 @@ bool keys[1024];
 class MoveCube : public Behaviour {
     public:
         MoveCube(Cube & obj) : Behaviour(obj) {
-            std::cout << "movecube constructor" << "\n";
-            std::cout << obj.behaviours.size() << "\n";
+            // std::cout << "movecube constructor" << "\n";
+            // std::cout << obj.behaviours.size() << "\n";
             onStart();
         }
         void onStart() override {
-            std::cout << "onStart" << "\n";
-            std::cout << "object position: ";
-            std::cout << object.transform.position.x << " ";
-            std::cout << object.transform.position.y << " ";
-            std::cout << object.transform.position.z << "\n";
+            // std::cout << "onStart" << "\n";
+            // std::cout << "object position: ";
+            // std::cout << object.transform.position.x << " ";
+            // std::cout << object.transform.position.y << " ";
+            // std::cout << object.transform.position.z << "\n";
 
             initialPosition = object.transform.position;
             targetPosition += initialPosition;
@@ -491,37 +491,37 @@ int main(int argc, char * argv[]) {
     glClearColor(feldrgau.r, feldrgau.g, feldrgau.b, 1.0f);
 
     // uniform location
-    GLint baseColorLocation         = shaderPtr->getUniformLocation("baseColor");
-    GLint translationMatLocation    = shaderPtr->getUniformLocation("translationMat");
-    GLint rotationMatLocation       = shaderPtr->getUniformLocation("rotationMat");
+    // GLint baseColorLocation         = shaderPtr->getUniformLocation("baseColor");
+    // GLint translationMatLocation    = shaderPtr->getUniformLocation("translationMat");
+    // GLint rotationMatLocation       = shaderPtr->getUniformLocation("rotationMat");
     // GLint viewLocation              = shaderPtr->getUniformLocation("view");
     // GLint projectionLocation        = shaderPtr->getUniformLocation("projection");
 
     /*
      * glm::mat 4 each item is a glm::vec4 col
      */
-    glm::mat4 translationMat = glm::mat4(
-            glm::vec4(1,0,0,0),
-            glm::vec4(0,1,0,0),
-            glm::vec4(0,0,1,0),
-            glm::vec4(0,0,0,1)
-            );
+    // glm::mat4 translationMat = glm::mat4(
+    //         glm::vec4(1,0,0,0),
+    //         glm::vec4(0,1,0,0),
+    //         glm::vec4(0,0,1,0),
+    //         glm::vec4(0,0,0,1)
+    //         );
 
-    glm::mat4 rotationMat;
+    // glm::mat4 rotationMat;
 
     glm::mat4 view = camera.getView();
     glm::mat4 projection = camera.getProjection();
 
-    shaderPtr->bind(translationMatLocation, translationMat);
-    shaderPtr->bind(rotationMatLocation, rotationMat);
+    // shaderPtr->bind(translationMatLocation, translationMat);
+    // shaderPtr->bind(rotationMatLocation, rotationMat);
     // shaderPtr->bind(viewLocation, view);
     // shaderPtr->bind(projectionLocation, projection);
-    shaderPtr->bind(baseColorLocation, 1.0f, 1.0f, 1.0f, 1.0f);
+    // shaderPtr->bind(baseColorLocation, 1.0f, 1.0f, 1.0f, 1.0f);
 
-    float colorTransitionTime = 0.0f;
-    float targetTransitionTime = 5.0f;  // in 5 seconds it will go from 0 to 1;
+    // float colorTransitionTime = 0.0f;
+    // float targetTransitionTime = 5.0f;  // in 5 seconds it will go from 0 to 1;
 
-    float rotationTargetTime = 5.0f;    // turn 360 in 2 seconds
+    // float rotationTargetTime = 5.0f;    // turn 360 in 2 seconds
 
     // set drawing mode: GL_LINE (wireframe) or GL_FILL (default)
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);  // wireframe

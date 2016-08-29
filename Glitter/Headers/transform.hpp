@@ -5,14 +5,18 @@
 
 class Transform {
     public:
-        Transform() {}
+        Transform();
         glm::mat4 getTranslationMat();
         glm::mat4 getRotationMat();
         glm::mat4 getScaleMat();
+        glm::mat4 getModelMat();
+        void setParent(Transform * parent);
 
         glm::vec3 position;
         glm::vec3 eulerAngles;
         glm::vec3 localScale;
+
+        Transform *parent;
 
     private:
 };

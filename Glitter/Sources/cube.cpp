@@ -169,16 +169,30 @@ void Cube::draw(Mirage::Shader *shaderPtr, Camera & camera) {
     shaderPtr->activate();
 
     // locations
+    GLint modelLocation             = shaderPtr->getUniformLocation("model");
     GLint viewLocation              = shaderPtr->getUniformLocation("view");
     GLint projectionLocation        = shaderPtr->getUniformLocation("projection");
-    GLint translationMatLocation    = shaderPtr->getUniformLocation("translationMat");
-    GLint rotationMatLocation       = shaderPtr->getUniformLocation("rotationMat");
+    // std::cout << "model location " << modelLocation << "\n";
+    // std::cout << "view location " << viewLocation << "\n";
+    // std::cout << "projection location " << projectionLocation << "\n";
 
+    // GLint translationMatLocation    = shaderPtr->getUniformLocation("translationMat");
+    // GLint rotationMatLocation       = shaderPtr->getUniformLocation("rotationMat");
+
+    glm::mat4 model = transform.getModelMat();
+    // std::cout << "model matrix: " << "\n";
+    // for (int col = 0; col < 4; col++) {
+    //     for (int row = 0; row < 4; row++) {
+    //         std::cout << model[row][col] << " ";
+    //     }
+    //     std::cout << "\n";
+    // }
     glm::mat4 view = camera.getView();
     glm::mat4 projection = camera.getProjection();
 
-    shaderPtr->bind(translationMatLocation, transform.getTranslationMat());
-    shaderPtr->bind(rotationMatLocation, transform.getRotationMat());
+    // shaderPtr->bind(translationMatLocation, transform.getTranslationMat());
+    // shaderPtr->bind(rotationMatLocation, transform.getRotationMat());
+    shaderPtr->bind(modelLocation, model);
     shaderPtr->bind(viewLocation, view);
     shaderPtr->bind(projectionLocation, projection);
 

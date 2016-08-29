@@ -2,12 +2,19 @@
 
 #include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate and glm::scale
 
+#include <iostream>
+
 /*
  * a partir de glm 0.9.6, funciones como glm::rotate toman siempre radianes como entrada.
  * en versiones 0.9.5 o anterior, glm::rotate tomaba eulerAngles, por lo que se debia hacer:
  *  glm::degrees(radians) o
  *  define glm_force_radians y pasar los radianes directamente a glm::rotate
  */
+
+Transform::Transform() {
+    parent = nullptr;
+    localScale = glm::vec3(1, 1, 1);
+}
 
 glm::mat4 Transform::getTranslationMat() {
     return glm::translate(glm::mat4(1.0f), position);
@@ -25,4 +32,16 @@ glm::mat4 Transform::getRotationMat() {
 
 glm::mat4 Transform::getScaleMat() {
     return glm::scale(glm::mat4(1.0f), localScale);
+}
+
+glm::mat4 Transform::getModelMat() {
+    if (parent != nullptr) {
+        return parent->getModelMat() * getTranslationMat() * getRotationMat() * getScaleMat();
+    } else {
+        return getTranslationMat() * getRotationMat() * getScaleMat();
+    }
+}
+
+void Transform::setParent(Transform * parent) {
+    this->parent = parent;
 }
