@@ -12,6 +12,11 @@ class Transform {
         glm::mat4 getModelMat();
         void setParent(Transform * parent);
 
+        glm::vec4 rotateAround(
+                Transform * origin,
+                glm::vec3 up,
+                float amount);
+
         glm::vec3 position;
         glm::vec3 eulerAngles;
         glm::vec3 localScale;

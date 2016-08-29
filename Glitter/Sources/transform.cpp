@@ -45,3 +45,23 @@ glm::mat4 Transform::getModelMat() {
 void Transform::setParent(Transform * parent) {
     this->parent = parent;
 }
+
+glm::vec4 Transform::rotateAround(
+        Transform * origin,
+        glm::vec3 up,
+        float amount) {
+    glm::mat4 rotationMat = glm::mat4(1.0f);
+    if (origin != nullptr) {
+        rotationMat = glm::rotate(
+                origin->getModelMat(),
+                amount,
+                up);
+    } else {
+        rotationMat = glm::rotate(
+                rotationMat,
+                amount,
+                up);
+    }
+
+    return rotationMat * glm::vec4(position, 1.0f);
+}

@@ -14,7 +14,7 @@ Camera::Camera() {
     nearPlane = 0.01f;
     farPlane = 100.0f;
 
-    movSpeed = 3.0f / 1.0f; // 1 unit in 1 second
+    movSpeed = slowerMovSpeed;
 
     pitch   = 0.0f;
     yaw     = 270.0f;
@@ -49,4 +49,12 @@ glm::mat4 Camera::getView() {
 
 glm::mat4 Camera::getProjection() {
     return glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
+}
+
+void Camera::goFaster() {
+    movSpeed = fasterMovSpeed;
+}
+
+void Camera::goSlower() {
+    movSpeed = slowerMovSpeed;
 }

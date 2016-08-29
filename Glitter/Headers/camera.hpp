@@ -1,5 +1,5 @@
 #ifndef CAMERA_HPP
-#define CAMERA_HPP 
+#define CAMERA_HPP
 
 #include <glad/glad.h>  // it will include opengl things like GLfloat and so on
 #include <glm/glm.hpp>
@@ -27,6 +27,9 @@ class Camera {
         glm::mat4 getView();
         glm::mat4 getProjection();
 
+        void goFaster();
+        void goSlower();
+
         glm::vec3 position;
         glm::vec3 front;
         glm::vec3 target;   // target = position + front
@@ -49,6 +52,9 @@ class Camera {
         float aspectRatio;
         float nearPlane;
         float farPlane;
+
+        float fasterMovSpeed = 10.0f;   // 10 units per second
+        float slowerMovSpeed = 3.0f;    // 3 untis per second
 };
 
 #endif /* CAMERA_HPP */

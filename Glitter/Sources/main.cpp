@@ -398,7 +398,8 @@ class MoveCube : public Behaviour {
 
 class RotateAround : public Behaviour {
     public:
-        RotateAround(Cube & obj) : Behaviour(obj) {
+        RotateAround(Cube & obj, Transform * target = nullptr) : Behaviour(obj) {
+            this->target = target;
             onStart();
         }
 
@@ -407,11 +408,16 @@ class RotateAround : public Behaviour {
         }
 
         void onUpdate() override {
-            glm::vec3 angularMov = angularSpeed * timer.deltaTime * glm::vec3(0, 1, 0);
-            object.transform.eulerAngles += angularMov;
-            object.transform.eulerAngles.x = fmod(object.transform.eulerAngles.x, 360.f);
-            object.transform.eulerAngles.y = fmod(object.transform.eulerAngles.y, 360.f);
-            object.transform.eulerAngles.z = fmod(object.transform.eulerAngles.z, 360.f);
+            // glm::vec3 angularMov = angularSpeed * timer.deltaTime * glm::vec3(0, 1, 0);
+            // object.transform.eulerAngles += angularMov;
+            float angularMov = angularSpeed * timer.deltaTime;
+            object.transform.position = glm::vec3(object.transform.rotateAround(
+                        target,
+                        glm::vec3(0.0f, 1.0f, 0.0f),
+                        angularMov));
+            // object.transform.eulerAngles.x = fmod(object.transform.eulerAngles.x, 360.f);
+            // object.transform.eulerAngles.y = fmod(object.transform.eulerAngles.y, 360.f);
+            // object.transform.eulerAngles.z = fmod(object.transform.eulerAngles.z, 360.f);
 
             // std::cout << "eulerAngles: ";
             // std::cout << object.transform.eulerAngles.x << " ";
@@ -419,8 +425,8 @@ class RotateAround : public Behaviour {
             // std::cout << object.transform.eulerAngles.z << "\n";
         }
 
-        // Cube & targetGameObject;
-        float angularSpeed = 360.0f / 1.0f;   // 360 degree in 1 second
+        Transform * target;
+        float angularSpeed = 1.0f / 1.0f;   // 360 degree in 1 second
 };
 
 
@@ -754,6 +760,12 @@ void updateCamera(Camera & camera) {
     if (keys[GLFW_KEY_D]) {
         camera.position += glm::normalize(glm::cross(camera.front, camera.up)) * camera.movSpeed * timer.deltaTime;
         camera.target = camera.position + camera.front;
+    }
+
+    if (keys[GLFW_KEY_SPACE]) {
+        camera.goFaster();
+    } else {
+        camera.goSlower();
     }
 }
 
