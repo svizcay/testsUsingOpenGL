@@ -52,6 +52,8 @@ Skybox::Skybox() {
     faces.push_back(PROJECT_SOURCE_DIR "/Glitter/Assets/Arts/SpaceSkybox/back.jpg");
     faces.push_back(PROJECT_SOURCE_DIR "/Glitter/Assets/Arts/SpaceSkybox/front.jpg");
 
+    // std::cout << PROJECT_SOURCE_DIR "/Glitter/Assets/Arts/SpaceSkybox/front.jpg" << "\n";
+
     glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
 
     int textureWidth, textureHeight;
@@ -66,6 +68,7 @@ Skybox::Skybox() {
             &nrBytesPerPixel,
             0);
         srcFormat = (nrBytesPerPixel == 3) ? GL_RGB : GL_RGBA;
+        // std::cout << "size: " << textureWidth << " " << textureHeight << "\n";
         glTexImage2D(
                 GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, // cube slot
                 0,                                  // mipmap level
